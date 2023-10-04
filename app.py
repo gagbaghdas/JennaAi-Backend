@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 from backend.core import get_prompts, get_ideas, get_best_insight
 from ingestion import get_summary
+import re
 
 load_dotenv()
 app = Flask(__name__)
@@ -10,8 +11,7 @@ app = Flask(__name__)
 @app.route("/ask-jenna-promts", methods=["POST"])
 def ask_jenna_promts():
     text_snippet = request.json.get("text", "")
-    generated_response = get_prompts(text_snippet)
-    response_list = generated_response.split("###")
+    response_list = get_prompts(text_snippet)
     return jsonify(generated_response=response_list)
 
 

@@ -4,15 +4,24 @@ from langchain import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from ingestion import get_summary
+import re
 
 
 def get_prompts(text: str) -> list:
     promt_template = """
         Given the game details {game_information} and a text excerpt {text} from the game design document,
-        generate up to four insightful short prompts to explore valuable ideas later on.
+        generate up to four insightful SHORT prompts to explore valuable ideas later on.
+        Each prompt should:
+        - be as short as possible while still being relevant and insightful)
+        - be relevant to text excerpt (IMPORTANT)
+        - be relevant to the game details, genre and platform
         Output the prompts separated by a '###' symbol.
         """
-    return run_llm(promt_template, include_game_info=True, text=text)
+    response_string = run_llm(promt_template, include_game_info=True, text=text)
+    response_list = response_string.split("###")
+    response_list = remove_numbering(response_list)
+    return response_list
+
 
 
 def get_ideas(text: str) -> dict:
@@ -134,3 +143,10 @@ def run_llm(template: str, include_game_info=False, *args, **kwargs) -> any:
         result = chain.run(**kwargs)
 
     return result
+
+def remove_numbering(prompts_list):
+    updated_prompts = []
+    for prompt in prompts_list:
+        updated_prompt = re.sub(r'(?:\n|^)\d+[\.\s]*', '', prompt)
+        updated_prompts.append(updated_prompt.strip())
+    return updated_prompts
