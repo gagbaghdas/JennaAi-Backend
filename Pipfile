@@ -1,0 +1,29 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+langchain = "*"
+black = "*"
+openai = "*"
+google-search-results = "*"
+cd = "*"
+flask = "*"
+pypdf = "*"
+tiktoken = "*"
+faiss-cpu = "*"
+beautifulsoup4 = "*"
+unstructured = "*"
+nltk = "*"
+fastapi = "*"
+jinja2 = "*"
+tqdm = "*"
+python-dotenv = "*"
+fpdf = "*"
+pypdf2 = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

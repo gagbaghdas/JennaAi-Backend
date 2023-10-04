@@ -1,0 +1,100 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    width: 100%;
+}
+
+#editor-container {
+    flex: 4;  /* 80% */
+    background-color: #f0f0f0;
+    border-right: 2px solid #333;
+    padding: 20px;
+    padding-left: 40px;  /* Padding from left */
+    padding-right: 40px;  /* Padding from right */
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+#response-panel {
+    width: 30%;  /* 20% */
+    background-color: #e0e0e0;
+    padding: 20px;
+    padding-left: 40px;  /* Padding from left */
+    padding-right: 40px;  /* Padding from right */
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+#editor-container[contenteditable="true"] {
+    outline: none;
+    min-height: 100%;
+}
+
+#response-text {
+    font-size: 16px;
+}
+#loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    border-radius: 5px;
+    color: white;
+}
+
+.prompt-button {
+    display: block;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+#insights-panel {
+    width: 30%;
+    float: left;
+    border-right: 1px solid #000;
+    background-color: #e0e0e0;
+    padding: 20px;
+    padding-left: 40px;  /* Padding from left */
+    padding-right: 40px;  /* Padding from right */
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.insight-section {
+    margin-bottom: 20px;
+}
+
+.insight-heading {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.insight-content {
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+
+.insight-link {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.insight {
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
