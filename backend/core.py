@@ -17,7 +17,7 @@ def get_prompts(text: str) -> list:
 
 def get_ideas(text: str) -> dict:
     promt_template = """
-         With the game details {game_information} and the given context {text},
+        With the game details {game_information} and the given context {text},
         propose 1 alternative strategy to enhance the game.
          Include:
             - Description
