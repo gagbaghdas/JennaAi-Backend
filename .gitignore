@@ -1,3 +1,5 @@
 .env
 faiss_index_ludo/
 pdfs/
+__pycache__/
+.vscode/
