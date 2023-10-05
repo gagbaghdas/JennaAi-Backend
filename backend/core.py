@@ -11,8 +11,8 @@ def get_prompts(text: str) -> list:
     subject = get_subject(text)
     if len(subject) == 0:
         subject = text
-    
-    print (subject)
+
+    print(subject)
 
     promt_template = """
         Given the game details {game_information} and a text excerpt {subject} from the game design document,
@@ -27,7 +27,6 @@ def get_prompts(text: str) -> list:
     response_list = response_string.split("###")
     response_list = remove_numbering(response_list)
     return response_list
-
 
 
 def get_ideas(text: str) -> dict:
@@ -126,7 +125,7 @@ def get_subject(text: str) -> list:
         Given the game details {game_information} and text excerpt {text} from the game design document,
         1. Identify the subject of the text excerpt.
         2. If relevant to the game details, extract key information, categorize, and summarize.
-        3. Return an empty string if the subject is irrelevant.
+        Return an empty string if the subject is irrelevant.
         """
     return run_llm(promt_template, include_game_info=True, text=text)
 
@@ -150,9 +149,10 @@ def run_llm(template: str, include_game_info=False, *args, **kwargs) -> any:
 
     return result
 
+
 def remove_numbering(prompts_list):
     updated_prompts = []
     for prompt in prompts_list:
-        updated_prompt = re.sub(r'(?:\n|^)\d+[\.\s]*', '', prompt)
+        updated_prompt = re.sub(r"(?:\n|^)\d+[\.\s]*", "", prompt)
         updated_prompts.append(updated_prompt.strip())
     return updated_prompts

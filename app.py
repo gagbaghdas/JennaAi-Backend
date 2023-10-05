@@ -36,6 +36,20 @@ def get_insights():
     return {}
 
 
+@app.route("/process-conversation", methods=["POST"])
+def process_conversation():
+    conversation = request.json.get("conversation", "")
+    # Process the conversation and generate a response
+    response_message = process_conversation_text(conversation)
+    return jsonify(response_message=response_message)
+
+
+def process_conversation_text(conversation_text):
+    # Implement your processing logic here
+    response_message = "Jenna's response to the entire conversation."
+    return response_message
+
+
 @app.route("/")
 def index():
     summary = get_summary()

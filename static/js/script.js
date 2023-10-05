@@ -93,8 +93,47 @@ function sendPromptToBackend(prompt) {
             console.log('No insight generated');
             return;
         }
-        const { description, benefits, use_case } = strategy;
-        promptsSection.innerHTML = `
+        updateChatConversation(prompt, strategy);
+
+        loadingIndicator.style.display = 'none';
+        editorContainer.style.pointerEvents = '';
+        responsePanel.style.pointerEvents = '';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        loadingIndicator.style.display = 'none';
+        editorContainer.style.pointerEvents = '';
+        responsePanel.style.pointerEvents = '';
+    });
+}
+
+function updateChatConversation(userMessage, jennaMessage) {
+    const chatConversation = document.getElementById('chat-conversation');
+    
+    if(userMessage) {
+        // Add user's message
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'chat-message user-message';
+        const userIconDiv = document.createElement('div');
+        userIconDiv.className = 'icon';
+        userMessageDiv.appendChild(userIconDiv);
+        const userTextDiv = document.createElement('div');
+        userTextDiv.className = 'message-text';
+        userTextDiv.innerText = userMessage;
+        userMessageDiv.appendChild(userTextDiv);
+        chatConversation.appendChild(userMessageDiv);
+    }
+    if(jennaMessage){
+        const { description, benefits, use_case } = jennaMessage;
+        // Add Jenna's response
+        const jennaMessageDiv = document.createElement('div');
+        jennaMessageDiv.className = 'chat-message jenna-message';
+        const jennaIconDiv = document.createElement('div');
+        jennaIconDiv.className = 'icon';
+        jennaMessageDiv.appendChild(jennaIconDiv);
+        const jennaTextDiv = document.createElement('div');
+        jennaTextDiv.className = 'message-text';
+        jennaTextDiv.innerHTML = `
             <div class="insight">
                 <div class="insight-section">
                     <div class="insight-heading">Insight Description:</div>
@@ -109,15 +148,40 @@ function sendPromptToBackend(prompt) {
                     <div class="insight-content">${use_case}</div>
                 </div>
             </div>`;
+        jennaMessageDiv.appendChild(jennaTextDiv);
+        chatConversation.appendChild(jennaMessageDiv);
+    }
+
+    // Scroll to the bottom of the chat conversation
+    chatConversation.scrollTop = chatConversation.scrollHeight;
+}
+
+function sendConversationToBackend() {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const chatConversation = document.getElementById('chat-conversation');
+    const conversationText = chatConversation.innerText;
+
+    const chatTextElement = document.getElementById('chat-text');
+    const chatText = chatTextElement.value.trim();
+    loadingIndicator.style.display = 'block';
+    
+    fetch('/process-conversation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ conversation: conversationText }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        const responseMessage = data.response_message;
+        updateChatConversation(chatText, responseMessage);
+        
         loadingIndicator.style.display = 'none';
-        editorContainer.style.pointerEvents = '';
-        responsePanel.style.pointerEvents = '';
     })
     .catch(error => {
         console.error('Error:', error);
         loadingIndicator.style.display = 'none';
-        editorContainer.style.pointerEvents = '';
-        responsePanel.style.pointerEvents = '';
     });
 }
 
@@ -203,12 +267,14 @@ function updateInsights() {
     });
 }
 
-
 function removeAskJennaButton() {
     if (askJennaBtn) {
         document.body.removeChild(askJennaBtn);
         askJennaBtn = null;
     }
 }
+
+document.getElementById('send-button').addEventListener('click', sendConversationToBackend);
+
 updateInsights();
 setInterval(updateInsights, 180000);
