@@ -8,8 +8,14 @@ import re
 
 
 def get_prompts(text: str) -> list:
+    subject = get_subject(text)
+    if len(subject) == 0:
+        subject = text
+    
+    print (subject)
+
     promt_template = """
-        Given the game details {game_information} and a text excerpt {text} from the game design document,
+        Given the game details {game_information} and a text excerpt {subject} from the game design document,
         generate up to four insightful SHORT prompts to explore valuable ideas later on.
         Each prompt should:
         - be as short as possible while still being relevant and insightful)
@@ -17,7 +23,7 @@ def get_prompts(text: str) -> list:
         - be relevant to the game details, genre and platform
         Output the prompts separated by a '###' symbol.
         """
-    response_string = run_llm(promt_template, include_game_info=True, text=text)
+    response_string = run_llm(promt_template, include_game_info=True, subject=subject)
     response_list = response_string.split("###")
     response_list = remove_numbering(response_list)
     return response_list
@@ -103,7 +109,7 @@ def get_marketing_insights(text: str) -> list:
         return ""
 
     promt_template = """
-        Given the game details {game_information} and the summary {text} from the game design document,
+        Given the game details {game_information} and the summary {subject} from the game design document,
         generate insights by researching similar games online.
         Include:
             - Insight Description
@@ -112,7 +118,7 @@ def get_marketing_insights(text: str) -> list:
             - Source EXACT link
         Output insights separated by '###' or return an empty string if no insights are found.
         """
-    return run_llm(promt_template, include_game_info=True, text=text)
+    return run_llm(promt_template, include_game_info=True, subject=subject)
 
 
 def get_subject(text: str) -> list:
