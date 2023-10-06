@@ -2,10 +2,25 @@ import os
 
 from langchain import PromptTemplate
 from langchain.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
+from langchain.chains import LLMChain, ConversationChain
 from ingestion import get_summary
 import re
+from langchain.memory import ConversationSummaryMemory, ConversationBufferMemory
+from langchain.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.schema import HumanMessage, AIMessage, SystemMessage
+import json
 
+llm = ChatOpenAI(temperature=1, model="gpt-4", verbose=True)
+game_information = get_summary()
+memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True,
+)
 
 def get_prompts(text: str) -> list:
     subject = get_subject(text)
@@ -51,8 +66,12 @@ def get_ideas(text: str) -> dict:
         else:
             print(f"Unexpected format: {line}")
 
+    init_new_conversation(text, result_str)
     return result_dict
 
+def init_new_conversation(user_question:str, ai_response:str):
+    memory.clear()
+    memory.save_context({"input": user_question},{"output": ai_response})
 
 def get_best_insight(text: str, old_insight: str) -> dict:
     best_insight = get_marketing_insights(text)
@@ -134,12 +153,10 @@ def run_llm(template: str, include_game_info=False, *args, **kwargs) -> any:
     input_variables = list(kwargs.keys())
 
     if include_game_info:
-        game_information = get_summary()
         input_variables.append("game_information")
 
     prompt_template = PromptTemplate(input_variables=input_variables, template=template)
 
-    llm = ChatOpenAI(temperature=1, model="gpt-4")
     chain = LLMChain(llm=llm, prompt=prompt_template)
 
     if include_game_info:
@@ -148,6 +165,38 @@ def run_llm(template: str, include_game_info=False, *args, **kwargs) -> any:
         result = chain.run(**kwargs)
 
     return result
+
+def run_llm_chat(question: str, new_chat: bool) -> any:
+
+    prompt = ChatPromptTemplate(
+        messages=[
+            SystemMessagePromptTemplate.from_template(
+                    """You are a Senior Game Designer.
+                     You are having a conversation with a colleague about the game.
+                     """
+            ),
+            MessagesPlaceholder(variable_name="chat_history"),
+            HumanMessagePromptTemplate.from_template("{question}")
+        ]
+    )
+
+    conversation = LLMChain(llm=llm, prompt=prompt, verbose=True, memory=memory)
+
+    result = conversation({"question": question})
+    print(result)
+    serialized_data = json.dumps(result, default=custom_serializer)
+    return serialized_data
+
+
+
+def custom_serializer(obj):
+    if isinstance(obj, HumanMessage):
+        return {'content': obj.content, 'type': 'human'}
+    elif isinstance(obj, AIMessage):
+        return {'content': obj.content, 'type': 'ai'}
+    elif isinstance(obj, SystemMessage):
+        return {'content': obj.content}
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
 def remove_numbering(prompts_list):

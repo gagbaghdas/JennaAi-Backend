@@ -133,7 +133,10 @@ function updateChatConversation(userMessage, jennaMessage) {
         jennaMessageDiv.appendChild(jennaIconDiv);
         const jennaTextDiv = document.createElement('div');
         jennaTextDiv.className = 'message-text';
-        jennaTextDiv.innerHTML = `
+        if (typeof jennaMessage === 'string') {
+            jennaTextDiv.innerHTML = jennaMessage;
+        } else {
+            jennaTextDiv.innerHTML = `
             <div class="insight">
                 <div class="insight-section">
                     <div class="insight-heading">Insight Description:</div>
@@ -148,6 +151,8 @@ function updateChatConversation(userMessage, jennaMessage) {
                     <div class="insight-content">${use_case}</div>
                 </div>
             </div>`;
+        }
+
         jennaMessageDiv.appendChild(jennaTextDiv);
         chatConversation.appendChild(jennaMessageDiv);
     }
@@ -170,12 +175,15 @@ function sendConversationToBackend() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ conversation: conversationText }),
+        body: JSON.stringify({ message: chatText }),
     })
     .then(response => response.json())
     .then(data => {
         const responseMessage = data.response_message;
-        updateChatConversation(chatText, responseMessage);
+        responseDict = JSON.parse(responseMessage);
+        userMessage = responseDict.question;
+        jennaMessage = responseDict.text;
+        updateChatConversation(userMessage, jennaMessage);
         
         loadingIndicator.style.display = 'none';
     })

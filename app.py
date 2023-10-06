@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
-from backend.core import get_prompts, get_ideas, get_best_insight
+from backend.core import get_prompts, get_ideas, get_best_insight, run_llm_chat
 from ingestion import get_summary
 import re
 
@@ -38,15 +38,14 @@ def get_insights():
 
 @app.route("/process-conversation", methods=["POST"])
 def process_conversation():
-    conversation = request.json.get("conversation", "")
-    # Process the conversation and generate a response
-    response_message = process_conversation_text(conversation)
+    message = request.json.get("message", "")
+    response_message = process_conversation_text(message)
     return jsonify(response_message=response_message)
 
 
-def process_conversation_text(conversation_text):
-    # Implement your processing logic here
-    response_message = "Jenna's response to the entire conversation."
+def process_conversation_text(message):
+    response_message = run_llm_chat(message, False)
+    print(response_message)
     return response_message
 
 
@@ -58,4 +57,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="192.168.0.131", port=5000)  # or any other port you prefer
+    app.run()  # or any other port you prefer
