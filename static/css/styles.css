@@ -99,6 +99,7 @@ body {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
+    margin-top: 30px;
 }
 
 #chat-section{
@@ -196,5 +197,66 @@ body {
     word-wrap: break-word;
     display: inline-block;
     vertical-align: top; /* Aligns the text div with the top of the icon div */
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;  /* Adjust for desired width */
+    height: 30px; /* Adjust for desired height */
+}
+
+.switch input {
+    display: none;  /* Hide the default checkbox */
+}
+
+.slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* The default switch color when off */
+    border-radius: 50px;    /* Makes it rounded */
+    transition: 0.4s;       /* Smoother transition */
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;  /* Adjust for desired knob size */
+    width: 26px;   /* Adjust for desired knob size */
+    left: 2px;     /* Small space to the left */
+    bottom: 2px;   /* Small space to the bottom */
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;  /* The color when the switch is on */
+}
+
+input:checked + .slider:before {
+    transform: translateX(30px);  /* Move the knob to the right when on */
+}
+
+.switch-container {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+.switch-container {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    align-items: center;  /* This will vertically center the label with the switch */
+}
+
+.switch-label {
+    margin-right: 10px;  /* Increase this value for more space */
+    vertical-align: middle;  /* This might not be necessary now that we're using flexbox, but it doesn't hurt to keep it */
 }
 
