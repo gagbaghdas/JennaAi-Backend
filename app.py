@@ -1,24 +1,25 @@
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
-from backend.core import get_prompts, get_ideas, get_best_insight, run_llm_chat
+from backend.core import GameInsightExtractor
 from ingestion import get_summary
 import re
 
 load_dotenv()
 app = Flask(__name__)
+extractor = GameInsightExtractor()
 
 
 @app.route("/ask-jenna-promts", methods=["POST"])
 def ask_jenna_promts():
     text_snippet = request.json.get("text", "")
-    response_list = get_prompts(text_snippet)
+    response_list = extractor.get_prompts(text_snippet)
     return jsonify(generated_response=response_list)
 
 
 @app.route("/ask-jenna-ideas", methods=["POST"])
 def ask_jenna_ideas():
     text_snippet = request.json.get("text", "")
-    generated_response = get_ideas(text_snippet)
+    generated_response = extractor.get_ideas(text_snippet)
     if len(generated_response) > 0:
         return jsonify(strategy=generated_response)
     return {}
@@ -30,7 +31,7 @@ def get_insights():
     insight_data = request.json.get("insightData", "")
     if len(text_snippet) == 0:
         return {}
-    generated_insight = get_best_insight(text_snippet, insight_data)
+    generated_insight = extractor.get_best_insight(text_snippet, insight_data)
     if len(generated_insight) > 0:
         return jsonify(generated_insight=generated_insight)
     return {}
@@ -44,16 +45,14 @@ def process_conversation():
 
 
 def process_conversation_text(message):
-    response_message = run_llm_chat(message, False)
+    response_message = extractor.run_llm_chat(message)
     print(response_message)
     return response_message
 
 
 @app.route("/")
 def index():
-    summary = get_summary()
-    print(summary)
-    return render_template("index.html", summary=summary)
+    return render_template("index.html")
 
 
 if __name__ == "__main__":

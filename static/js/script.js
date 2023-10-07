@@ -284,5 +284,6 @@ function removeAskJennaButton() {
 
 document.getElementById('send-button').addEventListener('click', sendConversationToBackend);
 
-updateInsights();
-setInterval(updateInsights, 180000);
+// Uncomment the following lines to enable automatic insight generation
+// updateInsights();
+// setInterval(updateInsights, 180000);
