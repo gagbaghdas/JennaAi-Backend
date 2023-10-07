@@ -74,6 +74,7 @@ function sendPromptToBackend(prompt) {
     const editorContainer = document.getElementById('editor-container');
     const responsePanel = document.getElementById('response-panel');
     const promptsSection = document.getElementById('prompts-section');
+    const chatConversation = document.getElementById('chat-conversation');
 
     loadingIndicator.style.display = 'block';
     editorContainer.style.pointerEvents = 'none';
@@ -93,6 +94,7 @@ function sendPromptToBackend(prompt) {
             console.log('No insight generated');
             return;
         }
+        chatConversation.innerHTML = '';
         updateChatConversation(prompt, strategy);
 
         loadingIndicator.style.display = 'none';
@@ -284,5 +286,6 @@ function removeAskJennaButton() {
 
 document.getElementById('send-button').addEventListener('click', sendConversationToBackend);
 
-updateInsights();
-setInterval(updateInsights, 180000);
+// Uncomment the following lines to enable automatic insight generation
+// updateInsights();
+// setInterval(updateInsights, 180000);
