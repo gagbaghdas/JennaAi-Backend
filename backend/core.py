@@ -18,7 +18,7 @@ import json
 
 class GameInsightExtractor:
     def __init__(self):
-        self.llm = ChatOpenAI(temperature=1, model="gpt-4", verbose=True)
+        self.llm = ChatOpenAI(temperature=1, model="gpt-3.5-turbo", verbose=True)
         self.game_information = get_summary()
         self.memory = ConversationBufferMemory(
             memory_key="chat_history",
