@@ -36,16 +36,20 @@ class GameInsightExtractor:
 
         promt_template = """
             Given the game details {game_information} and a text excerpt {subject} from the game design document,
-            generate up to four insightful SHORT prompts to explore valuable ideas later on.
+            generate 4 insightful SHORT prompts to explore valuable ideas later on.
             Each prompt should:
             - be as short as possible while still being relevant and insightful)
             - be relevant to text excerpt (IMPORTANT)
             - be relevant to the game details, genre and platform
             Output the prompts separated by a '###' symbol.
+            Fpr example:
+            What is the most important feature of the game? ### What is the most important feature of the game? ### What is the most important feature of the game? ### What is the most important feature of the game?
+            It's important to have the '###' symbol at the end of each prompt. 
             """
         response_string = self.run_llm(
             promt_template, include_game_info=True, subject=self.subject
         )
+        response_string = re.sub('\###$', '', response_string)
         response_list = response_string.split("###")
         response_list = self.remove_numbering(response_list)
         return response_list
@@ -60,11 +64,15 @@ class GameInsightExtractor:
                 - Potential use cases inspired by similar games
             Output the above information in a following format:
             description: <description> ### benefits: <benefits> ### use_case: <use_case>
+            For example:
+            description: Introduce a reward system for daily log-ins. ### benefits: Increases player retention. ### use_case: Similar to daily rewards in Game X.
             """
         result_str = self.run_llm(promt_template, include_game_info=True, text=text)
+        result_str = re.sub('\###$', '', result_str)
 
+        result_list = result_str.split("###")
         result_dict = {}
-        for line in result_str.split("###"):
+        for line in result_list:
             pieces = line.split(":", 1)
             if len(pieces) == 2:
                 key, value = pieces
@@ -89,13 +97,16 @@ class GameInsightExtractor:
         prompt_template = """
             Given the game details {game_information} and the list of useful insights {best_insight},
             find the most valuable insight and return it.
-            Include:
+            Include following information:
                 - Insight Description
                 - Benefits 
-                - Use cases from similar games
+                - 1 Use case from similar game
                 - Source EXACT link
             Output the above information in a following format:
-            description: <description> ### benefits: <benefits> ### use_cases: <use_cases> ### source: <source>
+            description: <description> ### benefits: <benefits> ### use_case: <use_case> ### source: <source>
+            It's IMPORTANT TO HAVE THE '###' SYMBOL at the end of each information. 
+            For example:
+            description: Introduce a reward system for daily log-ins. ### benefits: Increases player retention. ### use_case: Similar to daily rewards in Game X. ### source: www.example.com
             """
         result_str = self.run_llm(
             prompt_template, include_game_info=True, best_insight=best_insight
@@ -106,7 +117,8 @@ class GameInsightExtractor:
             return {}
         # Now parse the result_str into a dictionary
         result_dict = {}
-        for line in result_str.split("###"):
+        result_list = result_str.split("###")
+        for line in result_list:
             pieces = line.split(":", 1)
             if len(pieces) == 2:
                 key, value = pieces
@@ -144,9 +156,10 @@ class GameInsightExtractor:
                 - Source EXACT link
             Output insights separated by '###' or return an empty string if no insights are found.
             """
-        return self.run_llm(
+        result = self.run_llm(
             promt_template, include_game_info=True, subject=marketing_subject
         )
+        return result
 
     def get_subject(self, text: str) -> list:
         promt_template = """
@@ -234,3 +247,4 @@ class GameInsightExtractor:
             updated_prompt = re.sub(r"(?:\n|^)\d+[\.\s]*", "", prompt)
             updated_prompts.append(updated_prompt.strip())
         return updated_prompts
+    

@@ -181,6 +181,7 @@ function sendConversationToBackend() {
     })
     .then(response => response.json())
     .then(data => {
+        chatTextElement.value = '';
         const responseMessage = data.response_message;
         responseDict = JSON.parse(responseMessage);
         userMessage = responseDict.question;
@@ -251,7 +252,7 @@ function updateInsights() {
             console.log('No insight generated');
             return;
         }
-        const { description, benefits, use_cases, source } = insight;
+        const { description, benefits, use_case, source } = insight;
         insightsPanel.innerHTML = `
             <div class="insight">
                 <div class="insight-section">
@@ -264,7 +265,7 @@ function updateInsights() {
                 </div>
                 <div class="insight-section">
                     <div class="insight-heading">Use cases:</div>
-                    <div class="insight-content">${use_cases}</div>
+                    <div class="insight-content">${use_case}</div>
                 </div>
                 <div class="insight-section">
                     <div class="insight-heading">Source:</div>
