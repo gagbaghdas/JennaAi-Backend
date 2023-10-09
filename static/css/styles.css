@@ -32,8 +32,6 @@ body {
     width: 30%;  /* 20% */
     background-color: #e0e0e0;
     padding: 20px;
-    padding-left: 40px;  /* Padding from left */
-    padding-right: 40px;  /* Padding from right */
     box-sizing: border-box;
 }
 
@@ -156,7 +154,7 @@ body {
     position: relative;
     padding: 10px;
     margin: 5px 0;
-    width: 70%;
+    width: 85%;
 }
 
 .user-message {

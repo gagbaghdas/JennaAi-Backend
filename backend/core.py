@@ -49,26 +49,36 @@ class GameInsightExtractor:
         response_string = self.run_llm(
             promt_template, include_game_info=True, subject=self.subject
         )
-        response_string = re.sub('\###$', '', response_string)
+        response_string = re.sub("\###$", "", response_string)
         response_list = response_string.split("###")
         response_list = self.remove_numbering(response_list)
         return response_list
 
     def get_ideas(self, text: str) -> dict:
         promt_template = """
-            With the game details {game_information} and the given context {text},
-            propose 1 alternative strategy to enhance the game.
-            Include:
-                - Description
-                - Benefits 
-                - Potential use cases inspired by similar games
-            Output the above information in a following format:
-            description: <description> ### benefits: <benefits> ### use_case: <use_case>
-            For example:
-            description: Introduce a reward system for daily log-ins. ### benefits: Increases player retention. ### use_case: Similar to daily rewards in Game X.
-            """
+       I will provide a strategy to enhance a game based on given game details and context. Here are some examples:
+
+        Input: 
+        game_information: A fantasy MMORPG with a large open world and crafting system. 
+        text: Players have reported the crafting system to be tedious and unrewarding.
+        Output:
+        description: Introduce a tier-based crafting system where players can unlock better crafting abilities and receive rewards as they progress through the tiers. This will make the crafting system more engaging and rewarding. ### use_case: Similar to the crafting progression in games like Minecraft and Runescape.
+
+        Input:
+        game_information: A mobile puzzle game with a variety of challenging levels.
+        text: Players find early levels too easy and lose interest.
+        Output:
+        description: Implement a dynamic difficulty adjustment system that analyzes a player's performance and adjusts the level of challenge accordingly. This will keep players engaged and provide a personalized challenge. ### use_case: Similar to the adaptive difficulty in games like Candy Crush Saga.
+
+        ---
+
+        Now, with the game details {game_information} and the given context {text}, I need to propose 1 alternative strategy to enhance the game. The information should be provided in the following format: description: <description> ### use_case: <use_case>
+
+        It's IMPORTANT TO HAVE THE ### SYMBOL at the end of each information.
+        """
+
         result_str = self.run_llm(promt_template, include_game_info=True, text=text)
-        result_str = re.sub('\###$', '', result_str)
+        result_str = re.sub("\###$", "", result_str)
 
         result_list = result_str.split("###")
         result_dict = {}
@@ -98,15 +108,14 @@ class GameInsightExtractor:
             Given the game details {game_information} and the list of useful insights {best_insight},
             find the most valuable insight and return it.
             Include following information:
-                - Insight Description
-                - Benefits 
+                - Insight Description with it's benefits
                 - 1 Use case from similar game
-                - Source EXACT link
+                - Source EXACT link: Include only links to articles, videos, or other sources that provide more information about the insight.
             Output the above information in a following format:
-            description: <description> ### benefits: <benefits> ### use_case: <use_case> ### source: <source>
+            description: <description> ### use_case: <use_case> ### source: <source>
             It's IMPORTANT TO HAVE THE '###' SYMBOL at the end of each information. 
             For example:
-            description: Introduce a reward system for daily log-ins. ### benefits: Increases player retention. ### use_case: Similar to daily rewards in Game X. ### source: www.example.com
+            description: Introduce a reward system for daily log-ins. ### use_case: Similar to daily rewards in Game X. ### source: www.example.com
             """
         result_str = self.run_llm(
             prompt_template, include_game_info=True, best_insight=best_insight
@@ -149,6 +158,9 @@ class GameInsightExtractor:
         promt_template = """
             Given the game details {game_information} and the summary {subject} from the game design document,
             generate insights by researching similar games online.
+            Each Insight should:
+            - be relevant to summary (IMPORTANT)
+            - be relevant to the game details, genre and platform
             Include:
                 - Insight Description
                 - Benefits 
@@ -247,4 +259,3 @@ class GameInsightExtractor:
             updated_prompt = re.sub(r"(?:\n|^)\d+[\.\s]*", "", prompt)
             updated_prompts.append(updated_prompt.strip())
         return updated_prompts
-    

@@ -126,7 +126,7 @@ function updateChatConversation(userMessage, jennaMessage) {
         chatConversation.appendChild(userMessageDiv);
     }
     if(jennaMessage){
-        const { description, benefits, use_case } = jennaMessage;
+        const { description, use_case } = jennaMessage;
         // Add Jenna's response
         const jennaMessageDiv = document.createElement('div');
         jennaMessageDiv.className = 'chat-message jenna-message';
@@ -143,10 +143,6 @@ function updateChatConversation(userMessage, jennaMessage) {
                 <div class="insight-section">
                     <div class="insight-heading">Insight Description:</div>
                     <div class="insight-content">${description}</div>
-                </div>
-                <div class="insight-section">
-                    <div class="insight-heading">Benefits:</div>
-                    <div class="insight-content">${benefits}</div>
                 </div>
                 <div class="insight-section">
                     <div class="insight-heading">Use cases:</div>
@@ -220,9 +216,6 @@ function updateInsights() {
                 case 'Insight Description:':
                     insightData.description = content;
                     break;
-                case 'Benefits:':
-                    insightData.benefits = content;
-                    break;
                 case 'Use cases:':
                     insightData.use_cases = content;
                     break;
@@ -252,16 +245,12 @@ function updateInsights() {
             console.log('No insight generated');
             return;
         }
-        const { description, benefits, use_case, source } = insight;
+        const { description, use_case, source } = insight;
         insightsPanel.innerHTML = `
             <div class="insight">
                 <div class="insight-section">
                     <div class="insight-heading">Insight Description:</div>
                     <div class="insight-content">${description}</div>
-                </div>
-                <div class="insight-section">
-                    <div class="insight-heading">Benefits:</div>
-                    <div class="insight-content">${benefits}</div>
                 </div>
                 <div class="insight-section">
                     <div class="insight-heading">Use cases:</div>
