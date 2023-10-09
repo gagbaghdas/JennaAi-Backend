@@ -31,7 +31,7 @@ def get_insights():
     insight_data = request.json.get("insightData", "")
     if len(text_snippet) == 0:
         return {}
-    generated_insight = extractor.get_best_insight(text_snippet, insight_data)
+    generated_insight = extractor.get_marketing_insight(text_snippet, insight_data)
     if len(generated_insight) > 0:
         return jsonify(generated_insight=generated_insight)
     return {}

@@ -99,18 +99,35 @@ class GameInsightExtractor:
             {"input": user_question, "question": user_question}, {"output": ai_response}
         )
 
-    def get_best_insight(self, text: str, old_insight: str) -> dict:
-        best_insight = self.get_marketing_insights(text)
-        if len(best_insight) == 0:
-            return {}
-
+    def is_new_insight_differ(self, old_inights, new_insights) -> bool:
+        if len(old_inights) == 0 or len(new_insights) == 0:
+            return False
         prompt_template = """
-            Given the game details {game_information} and the list of useful insights {best_insight},
-            find the most valuable insight and return it.
+            Given the old_inights {old_inights} and the new insights {new_insights} ,
+            find if they have significant difference.
+            If they have significant difference, return True, otherwise return False.
+            """
+        result_str = self.run_llm(
+            prompt_template, old_inights=old_inights, new_insights=new_insights
+        )
+        return result_str == "True"
+
+    def get_marketing_insight(self, text: str, old_insight: str) -> list:
+        marketing_subject = self.get_subject(text)
+        if len(marketing_subject) == 0:
+            return ""
+
+        promt_template  = """
+            Given the game details {game_information} and the summary {subject},
+            generate 1 valuable insight by researching similar games online.
             Include following information:
-                - Insight Description with it's benefits
-                - 1 Use case from similar game
-                - Source EXACT link: Include only links to articles, videos, or other sources that provide more information about the insight.
+            The Insight should:
+            - be relevant to summary (IMPORTANT)
+            - be relevant to the game details, genre and platform
+            Include:
+            - Insight Description with it's benefits
+            - 1 Use case from similar game
+            - Source EXACT link: Include only links to articles, videos, or other sources that provide more information about the insight.
             Output the above information in a following format:
             description: <description> ### use_case: <use_case> ### source: <source>
             It's IMPORTANT TO HAVE THE '###' SYMBOL at the end of each information. 
@@ -118,8 +135,9 @@ class GameInsightExtractor:
             description: Introduce a reward system for daily log-ins. ### use_case: Similar to daily rewards in Game X. ### source: www.example.com
             """
         result_str = self.run_llm(
-            prompt_template, include_game_info=True, best_insight=best_insight
+            promt_template, include_game_info=True, subject=marketing_subject
         )
+
         if len(old_insight) > 0 and not self.is_new_insight_differ(
             old_insight, result_str
         ):
@@ -136,42 +154,6 @@ class GameInsightExtractor:
                 print(f"Unexpected format: {line}")
 
         return result_dict
-
-    def is_new_insight_differ(self, old_inights, new_insights) -> bool:
-        if len(old_inights) == 0 or len(new_insights) == 0:
-            return False
-        prompt_template = """
-            Given the old_inights {old_inights} and the new insights {new_insights} ,
-            find if they have significant difference.
-            If they have significant difference, return True, otherwise return False.
-            """
-        result_str = self.run_llm(
-            prompt_template, old_inights=old_inights, new_insights=new_insights
-        )
-        return result_str == "True"
-
-    def get_marketing_insights(self, text: str) -> list:
-        marketing_subject = self.get_subject(text)
-        if len(marketing_subject) == 0:
-            return ""
-
-        promt_template = """
-            Given the game details {game_information} and the summary {subject} from the game design document,
-            generate insights by researching similar games online.
-            Each Insight should:
-            - be relevant to summary (IMPORTANT)
-            - be relevant to the game details, genre and platform
-            Include:
-                - Insight Description
-                - Benefits 
-                - Use cases from similar games
-                - Source EXACT link
-            Output insights separated by '###' or return an empty string if no insights are found.
-            """
-        result = self.run_llm(
-            promt_template, include_game_info=True, subject=marketing_subject
-        )
-        return result
 
     def get_subject(self, text: str) -> list:
         promt_template = """
