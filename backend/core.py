@@ -1,11 +1,9 @@
-import os
-
 from langchain import PromptTemplate
 from langchain.chat_models import ChatOpenAI
-from langchain.chains import LLMChain, ConversationChain
+from langchain.chains import LLMChain
+from streaming import chain
 from ingestion import get_summary
-import re
-from langchain.memory import ConversationSummaryMemory, ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory
 from langchain.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
@@ -13,12 +11,16 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
 )
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
-import json
+
+import re
+import os
 
 
 class GameInsightExtractor:
     def __init__(self):
-        self.llm = ChatOpenAI(temperature=1, model="gpt-3.5-turbo", verbose=True)
+        self.llm = ChatOpenAI(
+            temperature=1, model="gpt-3.5-turbo", verbose=True, streaming=True
+        )
         self.game_information = get_summary()
         self.memory = ConversationBufferMemory(
             memory_key="chat_history",
@@ -54,44 +56,12 @@ class GameInsightExtractor:
         response_list = self.remove_numbering(response_list)
         return response_list
 
-    def get_ideas(self, text: str) -> dict:
-        promt_template = """
-       I will provide a strategy to enhance a game based on given game details and context. Here are some examples:
+    def get_ideas(self, question: str) -> dict:
 
-        Input: 
-        game_information: A fantasy MMORPG with a large open world and crafting system. 
-        text: Players have reported the crafting system to be tedious and unrewarding.
-        Output:
-        description: Introduce a tier-based crafting system where players can unlock better crafting abilities and receive rewards as they progress through the tiers. This will make the crafting system more engaging and rewarding. ### use_case: Similar to the crafting progression in games like Minecraft and Runescape.
-
-        Input:
-        game_information: A mobile puzzle game with a variety of challenging levels.
-        text: Players find early levels too easy and lose interest.
-        Output:
-        description: Implement a dynamic difficulty adjustment system that analyzes a player's performance and adjusts the level of challenge accordingly. This will keep players engaged and provide a personalized challenge. ### use_case: Similar to the adaptive difficulty in games like Candy Crush Saga.
-
-        ---
-
-        Now, with the game details {game_information} and the given context {text}, I need to propose 1 alternative strategy to enhance the game. The information should be provided in the following format: description: <description> ### use_case: <use_case>
-
-        It's IMPORTANT TO HAVE THE ### SYMBOL at the end of each information.
-        """
-
-        result_str = self.run_llm(promt_template, include_game_info=True, text=text)
-        result_str = re.sub("\###$", "", result_str)
-
-        result_list = result_str.split("###")
-        result_dict = {}
-        for line in result_list:
-            pieces = line.split(":", 1)
-            if len(pieces) == 2:
-                key, value = pieces
-                result_dict[key.strip()] = value.strip()
-            else:
-                print(f"Unexpected format: {line}")
-
-        self.init_new_conversation(text, result_str)
-        return result_dict
+        result_str = self.run_llm_chat( question=question)
+       
+        self.init_new_conversation(question, result_str)
+        return result_str
 
     def init_new_conversation(self, user_question: str, ai_response: str):
         self.memory.clear()
@@ -117,7 +87,7 @@ class GameInsightExtractor:
         if len(marketing_subject) == 0:
             return ""
 
-        promt_template  = """
+        promt_template = """
             Given the game details {game_information} and the summary {subject},
             generate 1 valuable insight by researching similar games online.
             Include following information:
@@ -211,20 +181,19 @@ class GameInsightExtractor:
         prompt.messages = messages
 
         self.memory.input_key = "question"
-        conversation = LLMChain(
-            llm=self.llm, prompt=prompt, verbose=True, memory=self.memory
-        )
-        result = conversation(
-            {
+        response = chain(
+            prompt=prompt,
+            llm=self.llm,
+            memory=self.memory,
+            params_dict={
                 "question": question,
                 "chat_history": self.memory.buffer_as_messages,
                 "game_information": self.game_information,
                 "subject": self.subject,
-            }
+            },
         )
-        print(result)
-        serialized_data = json.dumps(result, default=self.custom_serializer)
-        return serialized_data
+
+        return response
 
     def custom_serializer(self, obj):
         if isinstance(obj, HumanMessage):

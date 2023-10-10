@@ -1,4 +1,12 @@
-from flask import Flask, request, jsonify, render_template
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    render_template,
+    stream_with_context,
+    Response,
+)
+
 from dotenv import load_dotenv
 from backend.core import GameInsightExtractor
 from ingestion import get_summary
@@ -16,15 +24,6 @@ def ask_jenna_promts():
     return jsonify(generated_response=response_list)
 
 
-@app.route("/ask-jenna-ideas", methods=["POST"])
-def ask_jenna_ideas():
-    text_snippet = request.json.get("text", "")
-    generated_response = extractor.get_ideas(text_snippet)
-    if len(generated_response) > 0:
-        return jsonify(strategy=generated_response)
-    return {}
-
-
 @app.route("/get-insights", methods=["POST"])
 def get_insights():
     text_snippet = request.json.get("text", "")
@@ -38,16 +37,15 @@ def get_insights():
 
 
 @app.route("/process-conversation", methods=["POST"])
-def process_conversation():
+async def process_conversation():
     message = request.json.get("message", "")
-    response_message = process_conversation_text(message)
-    return jsonify(response_message=response_message)
+
+    return Response(process_conversation_text(message), mimetype="text/plain")
 
 
 def process_conversation_text(message):
-    response_message = extractor.run_llm_chat(message)
-    print(response_message)
-    return response_message
+    for chunk in extractor.run_llm_chat(message):
+        yield chunk
 
 
 @app.route("/")
@@ -56,4 +54,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run()  # or any other port you prefer
+    app.run(async_mode="threading")  # or any other port you prefer

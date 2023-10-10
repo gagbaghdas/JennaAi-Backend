@@ -70,102 +70,63 @@ function sendTextToBackend() {
 }
 
 function sendPromptToBackend(prompt) {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const editorContainer = document.getElementById('editor-container');
-    const responsePanel = document.getElementById('response-panel');
-    const promptsSection = document.getElementById('prompts-section');
     const chatConversation = document.getElementById('chat-conversation');
-
-    loadingIndicator.style.display = 'block';
-    editorContainer.style.pointerEvents = 'none';
-    responsePanel.style.pointerEvents = 'none';
-
-    fetch('/ask-jenna-ideas', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: prompt }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        const strategy = data.strategy;
-        if (!strategy || Object.keys(strategy).length === 0) {
-            console.log('No insight generated');
-            return;
-        }
-        chatConversation.innerHTML = '';
-        updateChatConversation(prompt, strategy);
-
-        loadingIndicator.style.display = 'none';
-        editorContainer.style.pointerEvents = '';
-        responsePanel.style.pointerEvents = '';
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        loadingIndicator.style.display = 'none';
-        editorContainer.style.pointerEvents = '';
-        responsePanel.style.pointerEvents = '';
-    });
+    chatConversation.innerHTML = '';
+    sendConversationToBackend(prompt);
 }
+
+function updateChatConversationViaStreaming(textChunk) {
+    const chatConversation = document.getElementById('chat-conversation');
+    
+    // Assuming Jenna's message is the last child (adjust if necessary)
+    const jennaTextDiv = chatConversation.lastChild.querySelector('.message-text');
+    
+    jennaTextDiv.innerText += textChunk;
+}
+
 
 function updateChatConversation(userMessage, jennaMessage) {
     const chatConversation = document.getElementById('chat-conversation');
-    
-    if(userMessage) {
-        // Add user's message
-        const userMessageDiv = document.createElement('div');
-        userMessageDiv.className = 'chat-message user-message';
-        const userIconDiv = document.createElement('div');
-        userIconDiv.className = 'icon';
-        userMessageDiv.appendChild(userIconDiv);
-        const userTextDiv = document.createElement('div');
-        userTextDiv.className = 'message-text';
-        userTextDiv.innerText = userMessage;
-        userMessageDiv.appendChild(userTextDiv);
-        chatConversation.appendChild(userMessageDiv);
-    }
-    if(jennaMessage){
-        const { description, use_case } = jennaMessage;
-        // Add Jenna's response
-        const jennaMessageDiv = document.createElement('div');
-        jennaMessageDiv.className = 'chat-message jenna-message';
-        const jennaIconDiv = document.createElement('div');
-        jennaIconDiv.className = 'icon';
-        jennaMessageDiv.appendChild(jennaIconDiv);
-        const jennaTextDiv = document.createElement('div');
-        jennaTextDiv.className = 'message-text';
-        if (typeof jennaMessage === 'string') {
-            jennaTextDiv.innerHTML = jennaMessage;
-        } else {
-            jennaTextDiv.innerHTML = `
-            <div class="insight">
-                <div class="insight-section">
-                    <div class="insight-heading">Insight Description:</div>
-                    <div class="insight-content">${description}</div>
-                </div>
-                <div class="insight-section">
-                    <div class="insight-heading">Use cases:</div>
-                    <div class="insight-content">${use_case}</div>
-                </div>
-            </div>`;
-        }
 
-        jennaMessageDiv.appendChild(jennaTextDiv);
-        chatConversation.appendChild(jennaMessageDiv);
-    }
+    // User's message
+    const userMessageDiv = document.createElement('div');
+    userMessageDiv.className = 'chat-message user-message';
+    const userIconDiv = document.createElement('div');
+    userIconDiv.className = 'icon';
+    userMessageDiv.appendChild(userIconDiv);
+    const userTextDiv = document.createElement('div');
+    userTextDiv.className = 'message-text';
+    userTextDiv.innerText = userMessage;
+    userMessageDiv.appendChild(userTextDiv);
+    chatConversation.appendChild(userMessageDiv);
+
+    // Jenna's message (initial setup with the first chunk)
+    const jennaMessageDiv = document.createElement('div');
+    jennaMessageDiv.className = 'chat-message jenna-message';
+    const jennaIconDiv = document.createElement('div');
+    jennaIconDiv.className = 'icon';
+    jennaMessageDiv.appendChild(jennaIconDiv);
+    const jennaTextDiv = document.createElement('div');
+    jennaTextDiv.className = 'message-text';
+    jennaTextDiv.innerText = jennaMessage;
+    jennaMessageDiv.appendChild(jennaTextDiv);
+    chatConversation.appendChild(jennaMessageDiv);
 
     // Scroll to the bottom of the chat conversation
     chatConversation.scrollTop = chatConversation.scrollHeight;
 }
 
-function sendConversationToBackend() {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const chatConversation = document.getElementById('chat-conversation');
-    const conversationText = chatConversation.innerText;
-
+function sendChatMessageToBackend() {
     const chatTextElement = document.getElementById('chat-text');
     const chatText = chatTextElement.value.trim();
+
+    sendConversationToBackend(chatText);
+}
+
+function sendConversationToBackend(chatText) {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const chatTextElement = document.getElementById('chat-text');
+
     loadingIndicator.style.display = 'block';
     
     fetch('/process-conversation', {
@@ -175,17 +136,36 @@ function sendConversationToBackend() {
         },
         body: JSON.stringify({ message: chatText }),
     })
-    .then(response => response.json())
-    .then(data => {
-        chatTextElement.value = '';
-        const responseMessage = data.response_message;
-        responseDict = JSON.parse(responseMessage);
-        userMessage = responseDict.question;
-        jennaMessage = responseDict.text;
-        updateChatConversation(userMessage, jennaMessage);
+    .then(response => {
+        let isFirstChunk = true;
+        const reader = response.body.getReader();
         
-        loadingIndicator.style.display = 'none';
+        function readStream() {
+            return reader.read().then(({ done, value }) => {
+                if (done) {
+                    
+                    return;
+                }
+                
+                let text = new TextDecoder().decode(value);
+                
+                if (isFirstChunk) {
+                    chatTextElement.value = '';
+                    loadingIndicator.style.display = 'none';
+                    updateChatConversation(chatText, text);
+                    isFirstChunk = false;
+                } else {
+                    updateChatConversationViaStreaming(text);
+                }
+                
+                // Read the next chunk
+                return readStream();
+            });
+        }
+        
+        return readStream();
     })
+    
     .catch(error => {
         console.error('Error:', error);
         loadingIndicator.style.display = 'none';
@@ -274,7 +254,7 @@ function removeAskJennaButton() {
     }
 }
 
-document.getElementById('send-button').addEventListener('click', sendConversationToBackend);
+document.getElementById('send-button').addEventListener('click', sendChatMessageToBackend);
 
 let intervalId = null;
 
