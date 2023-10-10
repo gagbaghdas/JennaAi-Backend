@@ -3,14 +3,11 @@ from flask import (
     request,
     jsonify,
     render_template,
-    stream_with_context,
     Response,
 )
 
 from dotenv import load_dotenv
 from backend.core import GameInsightExtractor
-from ingestion import get_summary
-import re
 
 load_dotenv()
 app = Flask(__name__)
