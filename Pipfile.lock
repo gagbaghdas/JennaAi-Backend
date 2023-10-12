@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1ebb48be8abc556f02acecde18d7b1dd2eed268b40dbef984b7d115a0ee07f6a"
+            "sha256": "b7062d919b20d7de8065d5912c2867c23f24348221268e1d60e0b018e2f61fb1"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -416,6 +416,15 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==3.0.0"
+        },
+        "flask-sqlalchemy": {
+            "hashes": [
+                "sha256:4ba4be7f419dc72f4efd8802d69974803c37259dd42f3913b0dcf75c9447e0a0",
+                "sha256:e4b68bb881802dda1a7d878b2fc84c06d1ee57fb40b874d3dc97dabfa36b8312"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.8'",
+            "version": "==3.1.1"
         },
         "fpdf": {
             "hashes": [

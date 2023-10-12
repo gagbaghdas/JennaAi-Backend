@@ -4,15 +4,49 @@ from flask import (
     jsonify,
     render_template,
     Response,
+    session
 )
 
 from dotenv import load_dotenv
 from backend.core import GameInsightExtractor
+from db import db
+from db.models.user_model import User
 
 load_dotenv()
 app = Flask(__name__)
 extractor = GameInsightExtractor()
 
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+
+    # Check if email already exists
+    user = User.query.filter_by(email=data['email']).first()
+    if user:
+        return jsonify({"success": False, "message": "Email already registered"}), 400
+
+    # Create new user and set password
+    new_user = User(email=data['email'])
+    new_user.set_password(data['password'])
+    
+    # Add user to database
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"success": True, "message": "User registered successfully"}), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+
+    if not user or not user.check_password(data['password']):
+        return jsonify({"success": False, "message": "Invalid email or password"}), 401
+
+    # Store user ID in session for user authentication
+    session['user_id'] = user.id
+
+    return jsonify({"success": True, "message": "Login successful"}), 200
 
 @app.route("/ask-jenna-promts", methods=["POST"])
 def ask_jenna_promts():
