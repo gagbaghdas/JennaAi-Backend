@@ -73,6 +73,16 @@ urllib3 = "==2.0.5"
 werkzeug = "==3.0.0"
 yarl = "==1.9.2"
 flask = {extras = ["async"], version = "*"}
+flask-sqlalchemy = "*"
+flask-cors = "*"
+pip = "*"
+install = "*"
+make-response = "*"
+flask-mongoengine = "*"
+wheel = "*"
+pymongo = "*"
+bcrypt = "*"
+flask-jwt-extended = "*"
 
 [dev-packages]
 

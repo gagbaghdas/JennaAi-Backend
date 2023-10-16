@@ -57,9 +57,8 @@ class GameInsightExtractor:
         return response_list
 
     def get_ideas(self, question: str) -> dict:
+        result_str = self.run_llm_chat(question=question)
 
-        result_str = self.run_llm_chat( question=question)
-       
         self.init_new_conversation(question, result_str)
         return result_str
 
