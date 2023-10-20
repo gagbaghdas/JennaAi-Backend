@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template, Response, session
 from datetime import timedelta
+from flask_jwt_extended import decode_token
 
 from dotenv import load_dotenv
 from backend.core import GameInsightExtractor
@@ -56,7 +57,6 @@ def signup():
     try:
         result = db.users.insert_one(new_user)
         user_id_str = str(result.inserted_id)
-        session["user_id"] = user_id_str
         access_token = create_access_token(identity=user_id_str)
         refresh_token = create_refresh_token(identity=user_id_str)
     except DuplicateKeyError:
@@ -66,7 +66,7 @@ def signup():
         jsonify(
             {
                 "success": True,
-                "token": access_token,
+                "access_token": access_token,
                 "refresh_token": refresh_token,
                 "message": "User registered successfully",
             }
@@ -74,17 +74,15 @@ def signup():
         201,
     )
 
-
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
     user = db.users.find_one({"email": data["email"]})
 
     if not user or not check_password(data["password"], user["password"]):
-        return jsonify({"success": False, "message": "Invalid email or password"}), 401
+        return jsonify({"success": False, "message": "Invalid email or password"}), 403
 
     user_id_str = str(user["_id"])
-    session["user_id"] = user_id_str
 
     access_token = create_access_token(identity=user_id_str)
     refresh_token = create_refresh_token(identity=user_id_str)
@@ -93,7 +91,7 @@ def login():
         jsonify(
             {
                 "success": True,
-                "token": access_token,
+                "access_token": access_token,
                 "refresh_token": refresh_token,
                 "message": "Login successful",
             }
@@ -102,7 +100,7 @@ def login():
     )
 
 
-@app.route("/ask-jenna-promts", methods=["POST"])
+@app.route("/api/ask-jenna-promts", methods=["POST"])
 @jwt_required()
 def ask_jenna_promts():
     text_snippet = request.json.get("text", "")
@@ -110,7 +108,85 @@ def ask_jenna_promts():
     return jsonify(generated_response=response_list)
 
 
-@app.route("/get-insights", methods=["POST"])
+@app.route("/api/create_project", methods=["POST"])
+@jwt_required()
+def create_project():
+    project_name = request.form.get("project_name")
+    brief = request.form.get("brief")
+    template_id = request.form.get("template_id")
+    brief_file = request.files.get("briefFile")
+    template_file = request.files.get("templateFile")
+
+    # Validate required fields
+    if (
+        not project_name
+        or not (brief or brief_file)
+        or not (template_id or template_file)
+    ):
+        return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+    user_id = get_jwt_identity() 
+
+    # Prepare document to be inserted into MongoDB
+    new_project = {
+        "user_id": user_id,
+        "project_name": project_name,
+        "brief": brief,
+        "template_id": template_id,
+        "brief_file_path": f"uploads/{brief_file.filename}" if brief_file else None,
+        "template_file_path": f"uploads/{template_file.filename}"
+        if template_file
+        else None,
+    }
+
+    try:
+        # Insert the new project document into MongoDB
+        result = db.projects.insert_one(new_project)
+        project_id_str = str(result.inserted_id)
+
+         # Determine the directories
+        brief_dir = f"user_projects/{user_id}/{project_id_str}/brief"
+        template_dir = f"user_projects/{user_id}/{project_id_str}/template"
+
+        # Create directories if they don't exist
+        os.makedirs(brief_dir, exist_ok=True)
+        os.makedirs(template_dir, exist_ok=True)
+
+        # Save files to the directories
+        if brief_file:
+            brief_file.save(os.path.join(brief_dir, brief_file.filename))
+        if template_file:
+            template_file.save(os.path.join(template_dir, template_file.filename))
+    except Exception as e:
+        # Handle any exceptions that occur
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    return (
+        jsonify(
+            {
+                "success": True,
+                "project_id": project_id_str,
+                "message": "Project created successfully",
+            }
+        ),
+        201,
+    )
+
+@app.route("/api/get_projects", methods=["GET"])
+@jwt_required()
+def get_projects():
+    user_id = get_jwt_identity()
+
+    projects_cursor = db.projects.find({"user_id": user_id})
+    
+    # Convert the projects to a list and then to JSON
+    projects_list = list(projects_cursor)
+    for project in projects_list:
+        project["_id"] = str(project["_id"])
+
+    return jsonify(projects_list), 200
+
+@app.route("/api/get-insights", methods=["POST"])
 @jwt_required()
 def get_insights():
     text_snippet = request.json.get("text", "")
@@ -123,7 +199,7 @@ def get_insights():
     return {}
 
 
-@app.route("/process-conversation", methods=["POST"])
+@app.route("/api/process-conversation", methods=["POST"])
 @jwt_required()
 async def process_conversation():
     message = request.json.get("message", "")
@@ -149,11 +225,6 @@ def hash_password(password: str) -> bytes:
     hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
 
     return hashed
-
-
-@app.route("/")
-def index():
-    return render_template("index.html")
 
 
 if __name__ == "__main__":
