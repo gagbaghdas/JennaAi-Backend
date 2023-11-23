@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, Response, session
+from flask import Flask, request, jsonify, render_template, Response, session, url_for
 from datetime import timedelta
 from flask_jwt_extended import decode_token
 
@@ -17,6 +17,7 @@ from flask_jwt_extended import (
 )
 
 from pymongo.errors import DuplicateKeyError
+from bson import ObjectId
 
 
 load_dotenv()
@@ -185,6 +186,68 @@ def get_projects():
         project["_id"] = str(project["_id"])
 
     return jsonify(projects_list), 200
+
+@app.route("/api/get_project/<project_id>", methods=["GET"])
+@jwt_required()
+def get_project(project_id):
+    user_id = get_jwt_identity()
+
+    try:
+        project = db.projects.find_one({"_id": ObjectId(project_id), "user_id": user_id})
+
+        if not project:
+            return jsonify({"success": False, "message": "Project not found"}), 404
+
+        # Convert the project ID to a string for JSON serialization
+        project["_id"] = str(project["_id"])
+
+        # Optionally, format or modify the response data as needed
+        return jsonify(project), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/update_project/<project_id>", methods=["PUT"])
+@jwt_required()
+def update_project(project_id):
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    try:
+        result = db.projects.update_one(
+            {"_id": ObjectId(project_id), "user_id": user_id},
+            {"$set": {
+                "project_name": data["project_name"],
+                "brief": data["brief"],
+                "template_id": data["template_id"]
+                # Add other fields as necessary
+            }}
+        )
+
+        if result.matched_count == 0:
+            return jsonify({"success": False, "message": "Project not found or unauthorized"}), 404
+
+        return jsonify({"success": True, "message": "Project updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/templates", methods=["GET"])
+def get_templates():
+    try:
+        templates_cursor = db.templates.find({})
+        templates_list = list(templates_cursor)
+
+        for template in templates_list:
+            template["_id"] = str(template["_id"])
+            template["image"] = request.url_root + url_for('static', filename=template["image"]).lstrip('/')
+
+        return jsonify(templates_list), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 
 @app.route("/api/get-insights", methods=["POST"])
 @jwt_required()
