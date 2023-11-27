@@ -187,6 +187,24 @@ def get_projects():
 
     return jsonify(projects_list), 200
 
+@app.route("/api/delete_project/<project_id>", methods=["DELETE"])
+@jwt_required()
+def delete_project(project_id):
+    user_id = get_jwt_identity()
+
+    try:
+        # Delete the project if it belongs to the logged-in user
+        result = db.projects.delete_one({"_id": ObjectId(project_id), "user_id": user_id})
+
+        if result.deleted_count == 0:
+            return jsonify({"success": False, "message": "Project not found or unauthorized"}), 404
+
+        return jsonify({"success": True, "message": "Project deleted successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 @app.route("/api/get_project/<project_id>", methods=["GET"])
 @jwt_required()
 def get_project(project_id):
